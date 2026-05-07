@@ -4,14 +4,9 @@
       "command": "/bin/bash",
       "args": ["-c", "~/.claude/scripts/contentful-mcp.sh"]
     },
-
     "datadog": {
-      "type": "http",
-      "url": "https://mcp.datadoghq.com/api/unstable/mcp-server/mcp",
-      "headers": {
-        "DD-API-KEY": "${DD_API_KEY}",
-        "DD-APPLICATION-KEY": "${DD_APPLICATION_KEY}"
-      }
+      "command": "/bin/bash",
+      "args": ["-c", "~/.claude/scripts/datadog-mcp.sh"]
     }
   }
 }
