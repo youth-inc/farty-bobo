@@ -160,16 +160,100 @@ if ! $LINKS_ONLY; then
   fi
 fi
 
+# ── Helpers ─────────────────────────────────────────────────────
+
+# Returns the newest direct subdirectory of $1 by mtime, NUL-safe.
+# Works correctly even when the path contains spaces.
+_newest_subdir() {
+  local parent="$1" newest="" newest_mtime=0 mtime
+  [[ -d "$parent" ]] || return 1
+  while IFS= read -r -d '' dir; do
+    mtime=$(stat -f '%m' "$dir" 2>/dev/null) || continue
+    if (( mtime > newest_mtime )); then newest_mtime=$mtime; newest="$dir"; fi
+  done < <(find "$parent" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null)
+  [[ -n "$newest" ]] || return 1
+  echo "$newest"
+}
+
+# Echos the active Claude Desktop skills dir, or returns 1 if not found.
+# The path is: skills-plugin/<newest-outer>/<newest-inner>/skills/
+# Claude Desktop rotates the inner UUID on app updates.
+_desktop_skills_dir() {
+  local base="$CLAUDE_DESKTOP_DIR/local-agent-mode-sessions/skills-plugin"
+  local outer inner
+  outer=$(_newest_subdir "$base")    || return 1
+  inner=$(_newest_subdir "$outer")   || return 1
+  [[ -d "$inner/skills" ]]           || return 1
+  echo "$inner/skills"
+}
+
+# Symlinks every skill dir from the repo into $1; prints a summary line.
+_symlink_skills_to() {
+  local target="$1" skill_dir skill_name count=0
+  for skill_dir in "$REPO_DIR/skills"/*/; do
+    [[ -d "$skill_dir" ]] || continue
+    skill_name="$(basename "${skill_dir%/}")"
+    symlink_dir "$REPO_DIR/skills/$skill_name" "$target/$skill_name"
+    count=$((count + 1))
+  done
+  ok "$count skill dirs symlinked to $target"
+}
+
+# Removes stale symlinks from the Desktop skills dir left by earlier setup runs.
+_prune_desktop_skill_symlinks() {
+  local target="$1" removed=0 entry
+  while IFS= read -r -d '' entry; do
+    rm -f "$entry"
+    removed=$((removed + 1))
+  done < <(find "$target" -maxdepth 1 -type l -print0 2>/dev/null)
+  if (( removed > 0 )); then warn "$removed stale skill symlinks removed from Claude Desktop"; fi
+}
+
+# Copies each skill dir from claude-desktop/skills/ into $1; prints a summary line.
+#
+# NOTE: Claude Desktop syncs its manifest from Anthropic's servers on startup, so local
+# manifest writes have no effect. Each skill must be imported ONCE via the Skills UI (+)
+# to create a server-side record. After that, this copy keeps the content up to date.
+# For skills that need the initial import, a .skill ZIP is generated under a tmp dir.
+_install_desktop_skills() {
+  local target="$1" skill_dir skill_name count=0
+  local -a new_skills=()
+  local skill_tmp="${TMPDIR:-/tmp}/farty-bobo-skills"
+  mkdir -p "$skill_tmp"
+  _prune_desktop_skill_symlinks "$target"
+  for skill_dir in "$REPO_DIR/claude-desktop/skills"/*/; do
+    [[ -d "$skill_dir" ]] || continue
+    skill_name="$(basename "${skill_dir%/}")"
+    [[ -n "$skill_name" && "$skill_name" != *"/"* && "$skill_name" != *".."* ]] || continue
+    rm -rf "${target:?}/${skill_name:?}"
+    cp -r "$skill_dir" "$target/$skill_name"
+    # Always generate a .skill ZIP — manifest is server-managed and cannot be checked locally.
+    (cd "$REPO_DIR/claude-desktop/skills" && zip -qr "$skill_tmp/$skill_name.skill" "$skill_name/")
+    new_skills+=("$skill_tmp/$skill_name.skill")
+    ok "$skill_name → $target (copied)"
+    count=$((count + 1))
+  done
+  local noun="skill"; if (( count != 1 )); then noun="skills"; fi
+  ok "$count $noun copied to Claude Desktop: $target"
+  if (( ${#new_skills[@]} > 0 )); then
+    warn "Import each skill once via Claude Desktop → Skills → + (server-side registration required)"
+    local f; for f in "${new_skills[@]}"; do warn "  Import: $f"; done
+  fi
+}
+
+# ── Claude Desktop skills (macOS only) ──────────────────────────
+if [[ "$OSTYPE" == darwin* ]]; then
+  DESKTOP_SKILLS_DIR="$(_desktop_skills_dir)" || true
+  if [[ -n "$DESKTOP_SKILLS_DIR" ]]; then
+    _install_desktop_skills "$DESKTOP_SKILLS_DIR"
+  else
+    warn "Claude Desktop skills-plugin dir not found — open Claude Desktop, enable at least one skill, then rerun setup.sh"
+  fi
+fi
+
 # ── Codex skills ────────────────────────────────────────────────
 mkdir -p "$CODEX_DIR/skills"
-skill_count=0
-for skill_dir in "$REPO_DIR/skills"/*/; do
-  [[ -d "$skill_dir" ]] || continue
-  skill_name="$(basename "${skill_dir%/}")"
-  symlink_dir "$REPO_DIR/skills/$skill_name" "$CODEX_DIR/skills/$skill_name"
-  skill_count=$((skill_count + 1))
-done
-ok "$skill_count skill dirs symlinked to ~/.codex/skills/"
+_symlink_skills_to "$CODEX_DIR/skills"
 
 # ── Done ─────────────────────────────────────────────────────────
 if ! $QUIET; then
