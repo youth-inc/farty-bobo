@@ -67,6 +67,15 @@ symlink_dir  "$REPO_DIR/skills"         "$CLAUDE_DIR/skills"
 symlink_file "$REPO_DIR/claude-desktop/mcp-versions.env" "$CLAUDE_DIR/mcp-versions.env"
 chmod 600 "$REPO_DIR/claude-desktop/mcp-versions.env"
 symlink_file "$REPO_DIR/.mcp.json"      "$CLAUDE_DIR/.mcp.json"
+
+# ~/.mcp.json makes MCP servers available in every project (CC walks up dir tree).
+# Guard against silently overwriting a real file that isn't ours.
+if [[ -e "$HOME/.mcp.json" && ! -L "$HOME/.mcp.json" ]]; then
+  warn "~/.mcp.json exists and is not a symlink — skipping global MCP link to avoid data loss. Move or delete it manually, then rerun setup.sh."
+else
+  symlink_file "$REPO_DIR/.mcp.json" "$HOME/.mcp.json"
+fi
+
 symlink_dir  "$REPO_DIR/claude-desktop/scripts" "$CLAUDE_DIR/scripts"
 
 # Make wrapper scripts executable (skip gracefully if none exist yet)
@@ -90,6 +99,7 @@ if $LINKS_ONLY; then
   # Re-link only if .env already exists; never bootstrap silently on session start.
   if [[ -f "$ENV_SRC" ]]; then
     ln -sf "$ENV_SRC" "$ENV_DST"
+    ln -sf "$ENV_SRC" "$CLAUDE_DIR/.env"
   fi
 else
   ENV_IS_NEW=false
@@ -103,6 +113,7 @@ else
   fi
 
   ln -sf "$ENV_SRC" "$ENV_DST"
+  ln -sf "$ENV_SRC" "$CLAUDE_DIR/.env"
   chmod 600 "$ENV_SRC"
   ok "mcp.env → $ENV_SRC (permissions: 600)"
 
