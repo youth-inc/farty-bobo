@@ -33,25 +33,21 @@ TEAMS_JSON="${3:-[]}"
 
 JSON_FIELDS="number,title,url,author,repository,createdAt,updatedAt,body"
 
-build_search_args() {
-  # Outputs positional args array for gh search prs (no --owner if ORG_SCOPE is empty)
-  local args=("--state" "open" "--json" "$JSON_FIELDS" "--limit" "100")
-  [[ -n "$ORG_SCOPE" ]] && args+=("--owner" "$ORG_SCOPE")
-  printf '%s\0' "${args[@]}"
-}
-
 parse_url() {
   # Extract owner and repo from a github.com PR URL
   local url="$1"
   echo "$url" | awk -F'/' '{print $4 "\t" $5}'
 }
 
+# ── Build common search args array (avoid mapfile — not available on bash 3.2) ─
+SEARCH_ARGS=("--state" "open" "--json" "$JSON_FIELDS" "--limit" "100")
+[[ -n "$ORG_SCOPE" ]] && SEARCH_ARGS+=("--owner" "$ORG_SCOPE")
+
 # ── Collect raw candidates ───────────────────────────────────────────────────
 
 CANDIDATES="[]"
 
 # 1. Direct body mentions via GitHub search
-mapfile -d $'\0' SEARCH_ARGS < <(build_search_args)
 BODY_DIRECT=$(gh search prs "mentions:${GH_LOGIN} -author:${GH_LOGIN}" \
   "${SEARCH_ARGS[@]}" 2>/dev/null || echo "[]")
 BODY_DIRECT=$(echo "$BODY_DIRECT" | jq '[.[] | . + {reason: "mention"}]')
