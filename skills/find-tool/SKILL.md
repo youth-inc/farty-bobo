@@ -1,8 +1,8 @@
 ---
 name: find-tool
 description: >
-  Given a task or user query, check whether an existing skill, plugin, hook, or script in the
-  Embark Claude tooling repos already handles it. Always run this before building anything new.
+  Given a task or user query, check whether an existing skill, hook, or script in the
+  farty-bobo repo already handles it. Always run this before building anything new.
   Trigger on: "do we have a tool for", "is there a skill for", "can we do X already",
   "check if there's a tool", "find a tool for", "what skill should I use for".
 model: sonnet
@@ -10,8 +10,8 @@ model: sonnet
 
 # Find an Existing Tool
 
-Before anyone builds a new skill, plugin, or script, check whether one already exists.
-This skill fetches the current state of both tooling repos live — no stale catalog.
+Before anyone builds a new skill or script, check whether one already exists.
+This skill fetches the current state of the farty-bobo repo live — no stale catalog.
 
 ## 1. Fetch the tool catalog
 
@@ -24,25 +24,6 @@ gh api "repos/fartybobo/farty-bobo/contents/skills" --jq '.[].name'
 For each skill name, read its `SKILL.md` frontmatter (name + description):
 ```bash
 gh api "repos/fartybobo/farty-bobo/contents/skills/<name>/SKILL.md" --jq '.content' | base64 -d
-```
-
-**Plugins** (`embarkvetlabs/embarkvet-claude-plugins`):
-```bash
-gh api "repos/embarkvetlabs/embarkvet-claude-plugins/contents/plugins" --jq '[.[] | select(.name | startswith("_") | not) | .name]'
-```
-Skip any directory whose name starts with `_` (e.g. `_template`). For each real plugin, read its `README.md` if present:
-```bash
-gh api "repos/embarkvetlabs/embarkvet-claude-plugins/contents/plugins/<name>/README.md" --jq '.content' | base64 -d
-```
-For skills inside a plugin (skip gracefully if `skills/` subdirectory doesn't exist — a 404 means this plugin has no skills):
-```bash
-gh api "repos/embarkvetlabs/embarkvet-claude-plugins/contents/plugins/<name>/skills" --jq '.[].name'
-gh api "repos/embarkvetlabs/embarkvet-claude-plugins/contents/plugins/<name>/skills/<skill-name>/SKILL.md" --jq '.content' | base64 -d
-```
-For agents inside a plugin (skip gracefully if `agents/` subdirectory doesn't exist):
-```bash
-gh api "repos/embarkvetlabs/embarkvet-claude-plugins/contents/plugins/<name>/agents" --jq '.[].name'
-gh api "repos/embarkvetlabs/embarkvet-claude-plugins/contents/plugins/<name>/agents/<agent-name>.md" --jq '.content' | base64 -d
 ```
 
 **Hooks** (`fartybobo/farty-bobo`):
@@ -99,12 +80,6 @@ Print every tool discovered in step 1, grouped into three sections:
 ## Skills
 - **<name>** — <one-line description>
   Source: fartybobo/farty-bobo · skills/<name>
-
-## Plugins
-- **<plugin-name>**
-  - Agent: <agent-name> — <one-line description>
-  - Skill: /<skill-name> — <one-line description>
-  Source: embarkvetlabs/embarkvet-claude-plugins · plugins/<plugin-name>
 
 ## Hooks
 - **<hook-filename>** — <one-line description from header comment>
