@@ -27,8 +27,7 @@ set -euo pipefail
 ENV_FILE="$HOME/.claude/mcp.env"
 
 if [[ ! -f "$ENV_FILE" ]]; then
-  echo "ERROR: $ENV_FILE not found. See README for setup instructions." >&2
-  exit 1
+  exec python3 "$HOME/.claude/scripts/mcp-stub.py"
 fi
 
 env_perms=$(stat -Lf "%OLp" "$ENV_FILE")

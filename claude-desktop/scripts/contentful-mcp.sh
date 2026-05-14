@@ -4,8 +4,7 @@ set -euo pipefail
 ENV_FILE="$HOME/.claude/mcp.env"
 
 if [[ ! -f "$ENV_FILE" ]]; then
-  echo "ERROR: $ENV_FILE not found. See README for setup instructions." >&2
-  exit 1
+  exec python3 "$HOME/.claude/scripts/mcp-stub.py"
 fi
 
 env_perms=$(stat -Lf "%OLp" "$ENV_FILE")
@@ -28,9 +27,8 @@ if [[ -f "$VERSIONS_FILE" ]]; then
   source "$VERSIONS_FILE"
 fi
 
-if [[ -z "${CONTENTFUL_MCP_VERSION:-}" ]]; then
-  echo "ERROR: CONTENTFUL_MCP_VERSION is not set. Add it to claude-desktop/mcp-versions.env." >&2
-  exit 1
+if [[ -z "${CONTENTFUL_MCP_VERSION:-}" || -z "${CONTENTFUL_MANAGEMENT_ACCESS_TOKEN:-}" ]]; then
+  exec python3 "$HOME/.claude/scripts/mcp-stub.py"
 fi
 
 exec npx "@contentful/mcp-server@${CONTENTFUL_MCP_VERSION}"

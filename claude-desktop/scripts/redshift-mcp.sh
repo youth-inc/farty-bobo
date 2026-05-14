@@ -4,8 +4,7 @@ set -euo pipefail
 ENV_FILE="$HOME/.claude/mcp.env"
 
 if [[ ! -f "$ENV_FILE" ]]; then
-  echo "ERROR: $ENV_FILE not found. See README for setup instructions." >&2
-  exit 1
+  exec python3 "$HOME/.claude/scripts/mcp-stub.py"
 fi
 
 env_perms=$(stat -Lf "%OLp" "$ENV_FILE")
@@ -29,8 +28,7 @@ if [[ -f "$VERSIONS_FILE" ]]; then
 fi
 
 if [[ -z "${REDSHIFT_MCP_VERSION:-}" ]]; then
-  echo "ERROR: REDSHIFT_MCP_VERSION is not set. Add it to claude-desktop/mcp-versions.env." >&2
-  exit 1
+  exec python3 "$HOME/.claude/scripts/mcp-stub.py"
 fi
 
 exec uvx "awslabs.redshift-mcp-server@${REDSHIFT_MCP_VERSION}"
