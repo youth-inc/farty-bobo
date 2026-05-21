@@ -37,7 +37,11 @@ disable-model-invocation: false
    Permanent project docs (`README.md`, `SKILL.md`, `AGENTS.md`, etc.) should still be committed when changed.
 7. Commit and push. If the push fails due to pre-push hook errors, prompt the human for approval before using `git push --no-verify`. If `--no-verify` was used, record this in the Decision Log (Step 9) as a warning line.
 
-7a. **Open a draft pull request.** After a successful push, open a **draft** PR using `gh pr create --draft` (or equivalent). After the PR is created, request a review from **Copilot** using `gh pr edit {number} --add-reviewer "Copilot"`. Capture the PR URL. If the PR creation fails, skip Steps 7 and 8 and warn the human.
+7a. **Open a draft pull request.** After a successful push, open a **draft** PR using `gh pr create --draft` (or equivalent).
+
+   **PR body:** Read `.github/PULL_REQUEST_TEMPLATE.md` from the repo root and use it as the base for the PR body — fill in the Summary and Test plan sections with content relevant to the change. If the file does not exist, use a bare `## Summary` / `## Test plan` structure. Never append Anthropic or Claude Code branding lines (e.g. `🤖 Generated with Claude Code`) to the PR body.
+
+   After the PR is created, request a review from **Copilot** using `gh pr edit {number} --add-reviewer "Copilot"`. Capture the PR URL. If the PR creation fails, skip Steps 7 and 8 and warn the human.
 
 7b. **Bot review loop (draft PRs only).**
 
