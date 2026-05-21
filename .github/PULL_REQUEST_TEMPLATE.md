@@ -1,6 +1,6 @@
 ## Summary
 
-[TICKET-ID]
+{ticket-id} <!-- or [NO-TICKET] if there is no associated ticket -->
 
 <!--
 - What changed and why (1-3 bullets)
