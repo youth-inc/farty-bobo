@@ -4,8 +4,6 @@
 
 **[fartybobo.com](https://fartybobo.com)**
 
-Shared configuration files for Claude Code, Claude Desktop, and Codex. Clone this repo and symlink the files into `~/.claude/` to set up a new machine quickly.
-
 ## Supported Platforms
 
 | Platform | Support |
