@@ -93,7 +93,7 @@
     "codex@openai-codex": true,
     "frontend-design@claude-plugins-official": true,
     "slack@claude-plugins-official": true,
-    "farty-bobo@farty-bobo": true
+    "farty-bobo@farty-bobo": false
   },
   "extraKnownMarketplaces": {
     "hamelsmu-evals-skills": {
