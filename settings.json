@@ -34,7 +34,8 @@
       "Bash(npm run typecheck:*)",
       "Bash(npm test:*)",
       "Bash(ln:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(gh gist create:*)"
     ],
     "deny": [
       "Read(./.env)",
