@@ -94,7 +94,28 @@ Keep the summary concise. Do not dump raw stack traces — extract the signal.
 ### 7. Offer Follow-up Actions
 
 After the summary, ask the human if they want to:
-- **Link to a Linear ticket** — invoke `/comment-linear` or `/create-linear-ticket` with the triage summary pre-filled
+- **Create a Linear ticket** — invoke `/create-linear-ticket` with the triage summary pre-filled (see below)
+- **Comment on an existing Linear ticket** — invoke `/comment-linear` with the triage summary pre-filled
 - **Post to Slack** — invoke `/post-on-slack` with the summary
 - **Dig deeper** — query `mcp__honeybadger__query_insights` for custom analytics on this fault
 - **Done** — no further action
+
+#### Pre-filling `/create-linear-ticket` from triage data
+
+When the human chooses to create a Linear ticket, pass the following context so the skill can draft a well-formed issue without asking redundant questions:
+
+- **Title**: `{ErrorClass}: {short error message}` — keep it under 80 chars
+- **Type**: Bug
+- **Priority**: use the severity level assigned in Step 5, mapped to Linear priority:
+  - P1 → Urgent
+  - P2 → High
+  - P3 → Medium
+  - P4 → Low
+- **Description** — include the following in the ticket description:
+  - Honeybadger fault URL (use the URL returned directly by `mcp__honeybadger__get_fault`)
+  - Environment: `{env}`
+  - First seen / Last seen / Total occurrences
+  - Affected user count
+  - Root cause hypothesis from Step 6
+  - Top 3–5 stack frames from the most recent occurrence
+  - Recommended next steps from Step 6
