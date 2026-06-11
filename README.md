@@ -1,6 +1,6 @@
 # Farty Bobo
 
-> Opinionated configuration for [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Claude Desktop](https://claude.ai/download), and [Codex](https://github.com/openai/codex) (partial support) that actually works. Custom skills, hooks, settings, and MCP servers — clone it, symlink it, stop suffering.
+> Opinionated configuration for [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Claude Desktop](https://claude.ai/download), and [Codex](https://github.com/openai/codex) (partial support) that actually works. Built for **software engineers** who need to ship fast — custom skills, hooks, settings, and MCP servers wired into a parallel workflow so nothing sits waiting. Clone it. Symlink it. Stop suffering.
 
 **[fartybobo.com](https://fartybobo.com)**
 

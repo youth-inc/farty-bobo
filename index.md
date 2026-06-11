@@ -370,12 +370,13 @@ image: /logos/fartybobo_angry_mascot_1360.png
       <p class="fb-label">Farty Bobo</p>
       <p class="fb-tagline">We Got the<br>F***ing Gas</p>
       <p class="fb-desc" id="fb-desc-text">
-        Every machine you own is a different hellscape of broken configs and
-        missing context. This fixes that. Full support for
+        Built for <strong>software engineers</strong> who need to ship — not babysit a hellscape of missing configs
+        and forgotten context across every machine you own. Full support for
         <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a>
         and <a href="https://claude.ai/download">Claude Desktop</a>,
         partial support for <a href="https://github.com/openai/codex">Codex</a>
-        — opinionated, angry, and actually set up right.
+        — comes with a parallel workflow so you're not watching a spinner while the next job sits idle.
+        Opinionated, angry, and actually set up right.
         Clone it. Symlink it. Stop suffering.
       </p>
     </div>
