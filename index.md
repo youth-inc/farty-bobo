@@ -438,7 +438,7 @@ image: /logos/fartybobo_angry_mascot_1360.png
 
   </div>
 
-  <footer class="fb-footer">Farty Bobo &mdash; We Got the f***ing Gas</footer>
+  <footer class="fb-footer">Farty Bobo &mdash; We Got the f***ing Gas &mdash; A <a href="https://luneyindustries.com" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">Luney Industries</a> Product</footer>
 
 </div>
 
