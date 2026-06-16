@@ -61,7 +61,7 @@ Resolve `<repo-name>` and `<branch-name>` using:
 
    **If PR creation failed, stop here — skip the reviewer fallback chain, skip Steps 8 and 9, and warn the human.**
 
-   Otherwise, capture the PR number from the `gh pr create` output (it appears in the PR URL, e.g. `https://github.com/{owner}/{repo}/pull/{number}`). Then invoke `/request-github-review` with the PR number. `/request-github-review` will request automated review and then run the bot feedback loop — waiting for CI and bot reviews, addressing comments, resolving CI failures, and marking draft PRs ready for review when done.
+   Otherwise, capture the PR number from the `gh pr create` output (it appears in the PR URL, e.g. `https://github.com/{owner}/{repo}/pull/{number}`). Then **immediately call the `Skill` tool with `skill: "request-github-review"` and `args: "{PR number}"`** — do NOT hand this off to the human, do NOT mention it as a next step, do NOT skip it. This is a required automated step. `/request-github-review` will request automated review and then run the bot feedback loop — waiting for CI and bot reviews, addressing comments, resolving CI failures, and marking draft PRs ready for review when done.
 
    *(End of Step 7a)*
 
