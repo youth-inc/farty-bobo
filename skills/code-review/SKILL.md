@@ -118,6 +118,17 @@ True inline comments (anchored to a file and line) require either:
 
 Each inline comment body must open with **"{your identity} says:"** (using your identity from CLAUDE.md) so the author knows who left it.
 
+**Markdown formatting in comment bodies:** When a comment body contains multiple points, questions, or items, use proper markdown list syntax — NOT inline numbering like `1) ... 2) ...`. Use real newline characters (press Enter, not the literal characters `\n`) so GitHub renders them as an actual list:
+
+```
+Farty Bobo says: Two concerns here —
+
+1. First point.
+2. Second point.
+```
+
+Inline `1) 2)` formatting renders as a single unbroken paragraph on GitHub.
+
 If neither the GitHub MCP nor `gh api` inline posting is feasible, fall back to referencing `file.ts:42` inline in the consolidated summary instead — do not post top-level comment blobs pretending they are inline.
 
 ### Consolidated summary
