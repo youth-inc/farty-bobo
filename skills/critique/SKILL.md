@@ -40,12 +40,36 @@ Resolve `<repo-name>` and `<branch-name>` using:
 - Codex review: Ask the human to run `/codex:review`
 - Manual review by the human.
 
-4. Prompt the human to select the next step from the following options:
+**How to run critics:**
+
+All critics use a **file-based output contract**. The orchestrator hands the agent a temp file path; the agent writes its findings there and goes idle; the orchestrator reads the file.
+
+Critic output files live under `TEMP_DIR` (same convention as the rest of this skill — see the Temp Directory section above):
+- Generalist: `$TEMP_DIR/critique-{summary}.md` where `{summary}` is a short kebab-case slug of the change (e.g. `fix-auth-redirect`, `skill-patch`).
+- Team: `$TEMP_DIR/critique-{specialty}.md` per agent (e.g. `critique-security.md`, `critique-correctness.md`).
+
+Resolve `ticket-id` the same way as Step 6: check the current branch name or conversation context; use `NO-TICKET` if none is found. Create `TEMP_DIR` with `mkdir -p` before spawning any agents.
+
+**One generalist critic:**
+a. Create `TEMP_DIR` with `mkdir -p $TEMP_DIR`.
+b. Spawn a single Agent with a focused prompt containing: the full diff, the repo name, the task description, and the output file path. Instruct it to write findings sorted by severity (HIGH / MEDIUM / LOW) to that file, or write "no findings" if nothing is worth raising. Keep the prompt tight — do not dump the full conversation history into it.
+c. After the Agent tool call returns (the agent goes idle), read the output file.
+d. If the file is missing or empty, fall back to inline reasoning — and **disclose to the human** that the critic produced no output file and this review is inline-only.
+e. Present findings to the human (global Step 4).
+
+**Team of critics:**
+a. Create `TEMP_DIR` with `mkdir -p $TEMP_DIR`.
+b. Spawn one Agent per specialty (e.g. security, performance, correctness) — each with its own output file path. Run all agents in parallel (single message, multiple Agent tool calls).
+c. After all Agent tool calls return (all agents go idle), read all output files.
+d. For any file that is missing or empty, fall back to inline reasoning for that specialty — and **disclose to the human** which critics produced no output and that those portions are inline-only.
+e. Synthesize all findings into a single sorted list, deduplicating overlapping issues across agents. Present to the human (global Step 4).
+
+4. Present the review findings to the human. Then prompt them to select the next step:
 
 - Ignore code review revisions and proceed to next step.
 - Implement revisions. Use the original agent(s) to implement changes.
 
-5. **Branch safety check.** Run `git branch --show-current` and compare against the repo's default branch (typically `main` or `master`).
+5. **Branch safety check — MANDATORY. Run this even if the review step errored, was skipped, or produced no findings.** Run `git branch --show-current` and compare against the repo's default branch (typically `main` or `master`).
    - If on the default branch: warn the human — "You are on `{branch}` (the default branch). Committing directly here is not recommended. Should I create a new branch first, or do you explicitly approve committing to `{branch}`?"
    - Do not proceed to Step 6 until the human has either approved committing to the default branch explicitly or confirmed a new branch to use.
    - If the human chooses a new branch: create it from the current HEAD (`git checkout -b {branch-name}`), then continue.
