@@ -1,13 +1,13 @@
 ---
 name: request-github-review
-description: Request an automated review on a GitHub PR. Tries Copilot first, then posts @codex and @claude review trigger comments. Also runs the bot feedback loop: waits for CI/bot reviews, addresses comments, resolves CI failures, then marks draft PRs ready for review.
+description: Request an automated review on a GitHub PR. Prompts the human to pick a reviewer (Copilot, Claude, Codex on GitHub, or Codex within Claude Code). Also runs the bot feedback loop: waits for CI/bot reviews, addresses comments, resolves CI failures, then marks draft PRs ready for review.
 model: haiku
 disable-model-invocation: false
 ---
 
 # Request GitHub Review Skill
 
-Request an automated reviewer on a GitHub pull request using the Copilot → Codex + Claude fallback chain. Also manages the bot feedback loop after review is requested — for all PRs, not just drafts.
+Request an automated reviewer on a GitHub pull request. Prompts the human to select which reviewer(s) to use, then manages the bot feedback loop after review is requested — for all PRs, not just drafts.
 
 This skill may be invoked multiple times in the PR lifecycle (e.g. after each new round of bot feedback).
 
@@ -17,33 +17,75 @@ A PR number. Detect it from context (e.g. recent `gh pr create` output, current 
 
 ## Steps
 
-1. **Try Copilot first.**
+1. **Prompt the human to select a reviewer.**
 
+   Present the following options and ask the human to choose one or more:
+
+   ```
+   Which reviewer(s) do you want on this PR?
+
+   1. Copilot — GitHub Copilot code review (added as a reviewer via the GitHub API)
+   2. Claude — Posts an @claude review trigger comment on the PR
+   3. Codex on GitHub — Posts a @codex review trigger comment on the PR
+   4. Codex within Claude Code — Runs /codex:adversarial-review locally to find critical bugs and vulnerabilities that may have escaped /critique
+   ```
+
+   Wait for the human's selection before proceeding. The human may pick more than one. If no response is given or context is ambiguous, ask again — do not guess.
+
+2. **Execute each selected option.**
+
+   Run only the steps corresponding to the human's selection(s):
+
+   **Option 1 — Copilot:**
    ```
    gh pr edit {number} --add-reviewer "Copilot"
    ```
+   - If this exits non-zero and the error contains any of: `"Could not resolve to a User"`, `"not found"`, `"is not a collaborator"`, `"does not have access"` — report that Copilot is not configured on this repo (permanent state, not transient) and stop this option.
+   - If it fails for any **other** reason (network error, auth failure, rate limit, unexpected output) — surface the error verbatim and stop this option.
 
-2. **If that command exits non-zero**, inspect the error output:
-
-   - If it contains any of: `"Could not resolve to a User"`, `"not found"`, `"is not a collaborator"`, `"does not have access"` — these signal that Copilot is permanently not configured on this repo. Fall through to Step 3.
-   - If it fails for any **other** reason (network error, auth failure, rate limit, unexpected output) — **do not fall through**. Surface the error to the human and stop.
-
-3. **Fall back to @codex and @claude review comments.**
-
-   Post both trigger comments:
-
+   **Option 2 — Claude:**
    ```
-   gh pr comment {number} --body "@codex review"
    gh pr comment {number} --body "@claude review"
    ```
+   - If this exits non-zero, warn the human and stop this option.
+   - If it exits 0: inform the human this is best-effort — the `@claude` bot must be installed and enabled on the repo for a review to actually queue. `gh` exits 0 regardless.
 
-   Both are best-effort. Each bot must be installed and enabled on the repo for the comment to queue a review — `gh` exits 0 regardless of whether a review was actually queued. Inform the human of this uncertainty for each.
+   **Option 3 — Codex on GitHub:**
+   ```
+   gh pr comment {number} --body "@codex review"
+   ```
+   - If this exits non-zero, warn the human and stop this option.
+   - If it exits 0: inform the human this is best-effort — the `@codex` bot must be installed and enabled on the repo for a review to actually queue. `gh` exits 0 regardless.
 
-4. **If Step 3 fails** (i.e. either `gh pr comment` exits non-zero), warn the human about the failure and stop.
+   **Option 4 — Codex within Claude Code:**
 
-5. **Bot review loop.**
+   This runs entirely locally against the current git branch. No GitHub API call is made.
 
-   **If this skill is already running in a parent invocation (i.e. the call chain is `/request-github-review` → `/address-pr-comments` or `/resolve-ci-failures` → `/critique` → `/request-github-review`), skip Step 5 entirely** — the bot loop is already active and re-entering it would cause an infinite loop.
+   Before invoking, ensure the PR's branch is checked out locally. If it isn't, fetch and check it out:
+   ```
+   gh pr checkout {number}
+   ```
+
+   Then determine the PR's base branch:
+   ```
+   gh pr view {number} --json baseRefName --jq '.baseRefName'
+   ```
+
+   Invoke `/codex:adversarial-review` with `--wait` (to keep the run foreground and surface output this turn) and `--base {base-branch}` (to scope the diff to what the PR actually changes):
+   ```
+   /codex:adversarial-review --wait --base {base-branch}
+   ```
+
+   Pass the following as the focus prompt:
+   > "Focus on the most critical bugs and security vulnerabilities that escaped /critique. Look for: logic errors, edge-case failures, injection vectors, auth bypasses, data races, and improper error handling."
+
+   Wait for the run to complete. Surface the verbatim Codex output — do not paraphrase, summarize, or reformat it.
+
+3. **If every selected option errored before issuing its action**, stop and report what failed. (Note: Options 2 and 3 always exit 0 if the `gh` command itself ran — "no review queued" is not an error.)
+
+4. **Bot review loop.**
+
+   **If this skill is already running in a parent invocation (i.e. the call chain is `/request-github-review` → `/address-pr-comments` or `/resolve-ci-failures` → `/critique` → `/request-github-review`), skip Step 4 entirely** — the bot loop is already active and re-entering it would cause an infinite loop.
 
    After review is requested, wait for automated reviewers (bots, linters, CI) to post their feedback:
 
@@ -87,9 +129,11 @@ A PR number. Detect it from context (e.g. recent `gh pr create` output, current 
 
 ## Output
 
-Report the outcome clearly:
+Report the outcome per selected option:
 
-- "Added Copilot as reviewer on PR #{number}." — if Step 1 succeeded.
-- "Copilot is not available as a reviewer on this repo (permanent configuration state, not a transient failure). Posted `@codex review` and `@claude review` on PR #{number} — reviews will be queued if the respective bots are installed." — if Step 3 was used.
-- Surface errors verbatim if either step failed unexpectedly.
+- **Copilot:** "Added Copilot as reviewer on PR #{number}." — or report the permanent configuration error if unavailable.
+- **Claude:** "Posted `@claude review` on PR #{number} — review will be queued if the bot is installed."
+- **Codex on GitHub:** "Posted `@codex review` on PR #{number} — review will be queued if the bot is installed."
+- **Codex within Claude Code:** Surface the verbatim output from `/codex:adversarial-review`. Do not paraphrase or reformat.
+- Surface errors verbatim for any option that failed unexpectedly.
 - For all PRs: report when the bot loop completes and feedback has been addressed. For draft PRs specifically, also report when the PR is marked ready (or when CI still needs attention).
