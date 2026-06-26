@@ -106,6 +106,8 @@ It then symlinks the generated files into place:
 
 And installs a `cmux-workspace` alias in your `~/.zshrc` (or `~/.bashrc`) that runs `youth-workspace.sh`. Re-running is idempotent — the alias is added only once. If you move the repo, re-run `cmux/setup.sh --cwd <path>` to refresh the alias, which hardcodes the absolute repo path at setup time.
 
+The templates ship with a Youth Inc workspace layout but are yours to adapt. Edit `cmux/configs/ghostty.template` to change fonts, themes, or opacity. Edit `cmux/configs/cmux.json.template` to add new workspace commands or tweak UI settings (full schema reference: [cmux schema](https://raw.githubusercontent.com/manaflow-ai/cmux/main/web/data/cmux.schema.json)). Edit `cmux/bin/youth-workspace.sh.template` to change the default pane layout. Re-run `cmux/setup.sh` after any template change to regenerate the live files.
+
 ## Customization
 
 - Edit files in this repo, then `git commit` and `git push` — changes propagate to every machine via `git pull`.
