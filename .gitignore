@@ -216,3 +216,9 @@ rotate-aws-keys.sh
 # gstack — cloned and installed on demand via setup.sh --gstack
 skills/gstack/
 skills/gstack-*/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
