@@ -66,7 +66,7 @@ Plan file naming: `$TEMP_DIR/plans/<jira-id>.plan.md` (e.g. `$TEMP_DIR/plans/PRO
 
 ### 2b. Determine Working Branch Strategy
 
-Before proceeding, establish where implementation work will happen. This step supersedes the "Worktree note" in the Temp Directory section above — follow this step for all branch/worktree decisions.
+**This step is mandatory and blocking. Do not proceed to Step 3 until a branch strategy is confirmed by the human. No exceptions.**
 
 **Resolve the default branch once**, store it as `DEFAULT_BRANCH`:
 ```
@@ -76,28 +76,30 @@ DEFAULT_BRANCH=${DEFAULT_BRANCH:-$(git symbolic-ref --short refs/remotes/origin/
 DEFAULT_BRANCH=${DEFAULT_BRANCH:-main}
 ```
 
-**Auto-detect current context:**
+**Detect current context** (for informational display only — do NOT auto-proceed based on this):
 
-1. Run `git rev-parse --git-dir` and compare to `git rev-parse --git-common-dir`.
-   - If they differ → **already inside a git worktree**. Record the current branch in the decisions scratch file (Step 9) as "Using existing worktree: `<branch>`" and continue to Step 3.
-   - If they are the same → **root repo checkout**. Continue to check 2.
+1. Run `git rev-parse --git-dir` and compare to `git rev-parse --git-common-dir`. Note if already inside a worktree.
+2. Note the current branch and whether it equals `DEFAULT_BRANCH`.
 
-2. Check the current branch against `DEFAULT_BRANCH`:
-   - If current branch ≠ `DEFAULT_BRANCH` → ask the human: "You're on `<branch>`. Reuse it, or start fresh?" Default to reusing; only create a new branch if the human asks.
-   - If current branch = `DEFAULT_BRANCH` → must branch off. Ask the human which strategy to use (see prompt below).
+Assemble the context line using these two facts independently (both can be true simultaneously):
+`Current branch: <name> [on default branch] | [inside worktree]`
 
-**Prompt when a new branch is needed:**
-
-Ask the human:
+**Always present the following prompt to the human** — every time, regardless of current branch or worktree state. If running non-interactively (no human at keyboard), default to Option 1 automatically and log it.
 
 ```
+Current branch: <name> [on default branch] | [inside worktree]
+
 How do you want to work on this?
-1. Worktree — new git worktree from <DEFAULT_BRANCH> in a sibling directory (e.g. ../farty-bobo-<branch-name>). Keeps your working tree clean.
-2. New branch here — create and check out a new branch from <DEFAULT_BRANCH> in this directory.
+1. Worktree — new git worktree from <DEFAULT_BRANCH> at ../<repo-name>-<branch-name>. Keeps your working tree clean.
+2. New branch here — create and check out a new branch from <DEFAULT_BRANCH> in this directory (root repo).
+3. Reuse current branch/worktree — continue working on <current-branch> as-is.
 ```
 
-- **Option 1 (Worktree):** Use `EnterWorktree` (preferred — it updates the agent's working context). If `EnterWorktree` is unavailable, fall back to `git worktree add ../$(basename $(git rev-parse --show-toplevel))-<branch-name> $DEFAULT_BRANCH`. Recompute `TEMP_DIR` using the new branch name after creation.
-- **Option 2 (New branch):** Run `git checkout -b <branch-name> $DEFAULT_BRANCH`.
+**Wait for the human to reply before doing anything else.**
+
+- **Option 1 (Worktree):** Use `EnterWorktree` (preferred — it switches the agent's working context into the new worktree). If `EnterWorktree` is unavailable, run `git worktree add ../<repo-name>-<branch-name> $DEFAULT_BRANCH` and then `cd` into the new worktree directory before doing any file operations. Worktree path convention: `../<repo-name>-<branch-name>` (sibling directory, dash-separated — same convention as `/build`). Recompute `TEMP_DIR` using the new branch name after creation.
+- **Option 2 (New branch here):** Run `git checkout -b <branch-name> $DEFAULT_BRANCH`.
+- **Option 3 (Reuse):** Confirm the current branch name and continue. If the current branch IS `DEFAULT_BRANCH`, refuse option 3 — never work directly on the default branch.
 
 Record the chosen strategy (worktree path or branch name) in the decisions scratch file (Step 9).
 
