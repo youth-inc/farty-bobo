@@ -36,3 +36,7 @@ These intensifiers rarely add any value and are mere noise.
 To add your own rules, personality, or guardrails without editing this file,
 create `CLAUDE.local.md` in the same directory as this file (it is gitignored).
 `setup.sh` will append it after this baseline on every run.
+
+# AGENTS.md
+
+There is a separate [AGENTS.md](./AGENTS.md) file in this repo that includes helpful tips for agents.

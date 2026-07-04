@@ -134,6 +134,7 @@
   },
   "alwaysThinkingEnabled": true,
   "effortLevel": "low",
+  "tui": "fullscreen",
   "skipWorkflowUsageWarning": true,
   "theme": "dark",
   "skipAutoPermissionPrompt": true,
@@ -147,6 +148,5 @@
   "feedbackSurveyState": {
     "lastShownTime": 1754572875128
   },
-  "knownMarketplaces": [],
-  "tui": "fullscreen"
+  "knownMarketplaces": []
 }
