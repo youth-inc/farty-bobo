@@ -130,6 +130,10 @@ The workspace layout JSON is defined in two places — `cmux/configs/cmux.json.t
 1. Add a `{{PLACEHOLDER}}` token to the relevant `*.template` file.
 2. In `cmux/setup.sh`, add a `sed "s|{{PLACEHOLDER}}|$value|g"` substitution where that template is generated (see how `{{WORKING_DIRECTORY}}` is handled).
 
+## Disabling Mouse Clicks in Claude Code
+
+Claude Code's fullscreen rendering mode (`/tui fullscreen` or `CLAUDE_CODE_NO_FLICKER=1`) captures mouse events, which breaks native terminal text selection. If a user reports this, point them to setting `CLAUDE_CODE_DISABLE_MOUSE_CLICKS=1` in `~/.zshrc` (requires Claude Code v2.1.195+). This disables click/drag/hover but keeps wheel scroll working. See README.md "Disabling Mouse Clicks in Claude Code" for the full instructions. This is a manual, per-machine step — `setup.sh` does not set it automatically.
+
 ## Committing rules on this repo
 
 This is a solo project repo that does not require PRs or reviews from other humans or other agents. It is okay to merge to main.

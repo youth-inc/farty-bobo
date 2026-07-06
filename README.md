@@ -108,6 +108,17 @@ And installs a `cmux-workspace` alias in your `~/.zshrc` (or `~/.bashrc`) that r
 
 The templates ship with a Youth Inc workspace layout but are yours to adapt. Edit `cmux/configs/ghostty.template` to change fonts, themes, or opacity. Edit `cmux/configs/cmux.json.template` to add new workspace commands or tweak UI settings (full schema reference: [cmux schema](https://raw.githubusercontent.com/manaflow-ai/cmux/main/web/data/cmux.schema.json)). Edit `cmux/bin/youth-workspace.sh.template` to change the default pane layout. Re-run `cmux/setup.sh` after any template change to regenerate the live files.
 
+## Disabling Mouse Clicks in Claude Code
+
+If Claude Code's fullscreen rendering mode (`/tui fullscreen` or `CLAUDE_CODE_NO_FLICKER=1`) captures mouse clicks and interferes with your terminal's native text selection, disable click/drag/hover handling while keeping wheel scroll:
+
+```sh
+echo 'export CLAUDE_CODE_DISABLE_MOUSE_CLICKS=1' >> ~/.zshrc
+source ~/.zshrc
+```
+
+Requires Claude Code v2.1.195+. Restart any running Claude Code sessions for it to take effect. This is env-var only — there's no `settings.json` equivalent. To disable *all* mouse capture including wheel scroll instead, use `CLAUDE_CODE_DISABLE_MOUSE=1` (takes precedence if both are set).
+
 ## Customization
 
 - Edit files in this repo, then `git commit` and `git push` — changes propagate to every machine via `git pull`.

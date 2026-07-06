@@ -8,6 +8,11 @@
 #   --quiet        Suppress success lines (warnings/errors still print).
 #   --gstack       Clone garrytan/gstack into skills/gstack and install its skills
 #                  under gstack-* names (off by default; requires bun).
+#
+# Manual step (not automated by this script): if Claude Code's fullscreen
+# rendering mode hijacks mouse clicks in your terminal, add this to ~/.zshrc:
+#   export CLAUDE_CODE_DISABLE_MOUSE_CLICKS=1
+# See README.md "Disabling Mouse Clicks in Claude Code" for details.
 
 set -euo pipefail
 
