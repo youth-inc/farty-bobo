@@ -60,19 +60,33 @@ Resolve `ticket-id` by checking the current branch name or conversation context;
 
 Every critic must be prompted as an adversary, not a passive reviewer. Include this instruction in every critic's prompt, and apply it when falling back to inline reasoning: "You are an adversarial critic. Assume the code is wrong until proven otherwise. Your job is to attack this change — find bugs, security holes, broken invariants, missing edge cases, and bad design decisions. Be aggressive. Do not give the benefit of the doubt. If something looks suspicious, call it out. Findings that survive scrutiny are more valuable than polite observations."
 
+**HARD GUARD — NO ASSUMPTIONS, EVER. Read this before spawning any critic.**
+
+The orchestrator MUST NOT proceed to the "Present findings" step until it has **positive, explicit confirmation** that every spawned critic has finished. Critics have taken longer than expected in the past, and the orchestrator wrongly reported "nothing found" while a critic was still working — this led the human astray with a false clean bill. That failure mode is now explicitly forbidden. This is the one rule everything below hinges on:
+
+> **A critic's Agent tool call returning is NOT the same as the critic finishing.** By default agents run in the background (`run_in_background: true`), and a background call returns control to the orchestrator *at dispatch time* — while the agent keeps working. The orchestrator must wait for that specific agent's completion/idle notification. Never read, touch, or summarize a critic's output file before that notification arrives, no matter how the tool call itself behaved.
+
+Supporting rules:
+- Never treat "no tool result yet," or a returned dispatch call, as "no findings." Absence of a confirmed-complete result is not evidence of absence of problems.
+- Every critic — with no exceptions — MUST end its work by writing its findings, or an explicit clean-pass statement (e.g. literally "no findings"), to its assigned markdown file. A critic that goes idle without having written to its file is a **missing-output failure state**, not a silent pass — see the fallback step in each flow below.
+- **Bounded wait, not an infinite trap.** If a critic has not reported completion after a reasonable wait and shows no sign of activity (crashed, hung, orphaned), treat it the same as the missing-output failure state above: fall back to inline reasoning for that critic and disclose it to the human. Do not block forever — "wait for real completion" is not license to hang indefinitely with no exit.
+- If the human interrupts, or the orchestrator is tempted to move on for any reason before every critic has reported, STOP and say explicitly which critics are still running. Do not summarize partial results as if they were final.
+
 **One generalist critic:**
 a. Create `TEMP_DIR` with `mkdir -p $TEMP_DIR`.
 b. Spawn a single Agent with a focused prompt containing: the full diff, the repo name, the task description, the output file path, and the adversarial framing above. Instruct it to write findings sorted by severity (HIGH / MEDIUM / LOW) to that file, or write "no findings" if nothing is worth raising. Do NOT instruct the critic to flag skipped tests — the Step 3 pre-check owns that. Keep the prompt tight — do not dump the full conversation history into it.
-c. After the Agent tool call returns (the agent goes idle), read the output file.
-d. If the file is missing or empty, fall back to inline reasoning using the adversarial framing above — and **disclose to the human** that the critic produced no output file and this review is inline-only.
-e. Present findings to the human (global Step 5).
+c. **Wait for the completion notification, not the tool call return.** Do not read the output file until this specific agent has reported idle/complete, per the HARD GUARD above. Apply the bounded-wait rule if it never reports.
+d. Once completion is confirmed (or the bounded wait expires), read the output file.
+e. If the file is missing or empty, fall back to inline reasoning using the adversarial framing above — and **disclose to the human** that the critic produced no output file (and, if applicable, that the bounded wait expired) and this review is inline-only.
+f. Present findings to the human (global Step 5).
 
 **Team of critics:**
 a. Create `TEMP_DIR` with `mkdir -p $TEMP_DIR`.
 b. Spawn one Agent per specialty (e.g. security, performance, correctness) — each with its own output file path and the adversarial framing above. Do NOT instruct critics to flag skipped tests — the Step 3 pre-check owns that. Run all agents in parallel (single message, multiple Agent tool calls).
-c. After all Agent tool calls return (all agents go idle), read all output files.
-d. For any file that is missing or empty, fall back to inline reasoning for that specialty using the adversarial framing above — and **disclose to the human** which critics produced no output and that those portions are inline-only.
-e. Synthesize all findings into a single sorted list, deduplicating overlapping issues across agents. Present to the human (global Step 5).
+c. **Wait for every single one's completion notification, not their tool call returns.** Track each critic by name/id. Do not read any output file, and do not proceed to (d), until you have confirmed real completion for ALL spawned critics per the HARD GUARD above. A subset finishing early does not authorize acting on partial results. Apply the bounded-wait rule per-critic to any that never report.
+d. Once all critics have confirmed completion (or their bounded waits expire), read all output files.
+e. For any file that is missing or empty, fall back to inline reasoning for that specialty using the adversarial framing above — and **disclose to the human** which critics produced no output (and, if applicable, which bounded waits expired) and that those portions are inline-only.
+f. Synthesize all findings into a single sorted list, deduplicating overlapping issues across agents. Present to the human (global Step 5).
 
 5. Present the review findings to the human. Then prompt them to select the next step:
 
